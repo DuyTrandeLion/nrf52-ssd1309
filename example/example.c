@@ -1,3 +1,8 @@
+
+/* Define GPIOs before using */
+#define GPIO_PIN_SET		1
+#define GPIO_PIN_RESET		0
+
 #define OLED_SCK_PIN	      NRF_GPIO_PIN_MAP(1, 15)
 #define OLED_MOSI_PIN	      NRF_GPIO_PIN_MAP(1, 13)
 #define OLED_SS_PIN	      	  NRF_GPIO_PIN_MAP(1, 12)
@@ -5,14 +10,7 @@
 #define OLED_DC_PIN           NRF_GPIO_PIN_MAP(1, 11)
 #define OLED_RES_PIN          NRF_GPIO_PIN_MAP(1, 10)
 
-typedef enum
-{
-    OLED_SPI_READY = 0,
-    OLED_SPI_BUSY,
-    OLED_SPI_NOT_AVAILABLE
-} oled_spi_state_t;
-
-
+/* Define macros for easier usage */
 #define oled_enable()			nrf_gpio_pin_write(OLED_ENABLE_PIN, GPIO_PIN_SET)
 #define oled_disable()			nrf_gpio_pin_write(OLED_ENABLE_PIN, GPIO_PIN_RESET)
 
@@ -40,6 +38,13 @@ typedef enum
 
 #define oled_update_screen()		ssd1309_UpdateScreen()
 #define oled_clear_screen()		ssd1309_Fill(Black)
+
+typedef enum
+{
+    OLED_SPI_READY = 0,
+    OLED_SPI_BUSY,
+    OLED_SPI_NOT_AVAILABLE
+} oled_spi_state_t;
 
 /* SPI instances */
 const nrf_drv_spi_t m_oled_spi   = NRF_DRV_SPI_INSTANCE(OLED_SPI_INSTANCE);
@@ -127,5 +132,12 @@ int main(void)
 	
     /* Initialize oled. */
     oled_init();	
+	oled_write_symbol(BLE, 32, 0);
+	oled_write_string("Testing 123!!", 0, 32);
+	
+    while (1)
+    {
+		NRF_LOG_FLUSH();
+	}
 }
 
