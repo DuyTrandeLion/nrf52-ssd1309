@@ -320,6 +320,5 @@ SymbolDef SSD1309_Symbol[ALL_SYMBOL] = {
                                       {BATTERY_100, 9, 10, Battery100},
                                       {BLE, 7, 10, Bluetooth},
                                       {DOWN, 7, 11, Down},
-                                      {UP, 7, 11, Up},
-                                      {TARESTATUS, 11, 11, TareStatus}
+                                      {UP, 7, 11, Up}
                                     };
