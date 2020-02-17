@@ -4,8 +4,8 @@ SSD1306/SSD1309 OLED driver for Nordic nRF52
 Tested with nRF52-DK, nRF52833-DK and nRF52840-DK. 
 
 The code is based on
-[afiskon/stm32-ssd1306](https://github.com/DuyTrandeLion/nrf52-ssd1309) library
-developed by OAleksander Alekseev ( [@afiskon](https://github.com/afiskon) ) in 2018.
+[afiskon/stm32-ssd1306](https://github.com/afiskon/stm32-ssd1306) library
+developed by Aleksander Alekseev ( [@afiskon](https://github.com/afiskon) ) in 2018.
 
 **Text from the original author**
 STM32 library for working with OLEDs based on SSD1306, SH1106 and SSD1309,
