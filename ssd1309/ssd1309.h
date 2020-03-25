@@ -51,6 +51,16 @@ typedef void (*ssd1309_spi_handle)(uint8_t, uint8_t *, size_t);
 #define SSD1309_WIDTH           128
 #endif
 
+/* SSD1309 offset of x in pixels  */
+#ifndef SSD1309_OFFSET_X
+#define SSD1309_OFFSET_X        -2
+#endif
+
+/* SSD1309 offset of y in pixels  */
+#ifndef SSD1309_OFFSET_Y
+#define SSD1309_OFFSET_Y        0
+#endif
+
 #define OLED_RESET              0
 #define OLED_WRITE_DATA         1
 #define OLED_WRITE_COMMAND      2

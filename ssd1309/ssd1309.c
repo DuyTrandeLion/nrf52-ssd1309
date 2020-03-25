@@ -454,13 +454,13 @@ void ssd1309_SetCursor(uint8_t x, uint8_t y)
 {
     if (0 == SSD1309.Rotated)
     {
-	SSD1309.CurrentX = x;
-	SSD1309.CurrentY = y;
+	SSD1309.CurrentX = x - SSD1309_OFFSET_X;
+	SSD1309.CurrentY = y - SSD1309_OFFSET_Y;
     }
     else
     {
-	SSD1309.CurrentX = SSD1309_WIDTH - x;
-	SSD1309.CurrentY = SSD1309_HEIGHT - 1 - y;
+	SSD1309.CurrentX = SSD1309_WIDTH - x + SSD1309_OFFSET_X;
+	SSD1309.CurrentY = SSD1309_HEIGHT - 1 - y + SSD1309_OFFSET_Y;
     }
 }
 
