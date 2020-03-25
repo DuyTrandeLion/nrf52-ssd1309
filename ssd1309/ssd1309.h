@@ -27,8 +27,6 @@
 #include "app_util_platform.h"
 #include "app_error.h"
 
-#include "peripherals.h"
-
 #if defined(SSD1309_USE_I2C)
 #define SSD1309_I2C_ADDR        0x3C
 
@@ -52,6 +50,11 @@ typedef void (*ssd1309_spi_handle)(uint8_t, uint8_t *, size_t);
 #ifndef SSD1309_WIDTH
 #define SSD1309_WIDTH           128
 #endif
+
+#define OLED_RESET              0
+#define OLED_WRITE_DATA         1
+#define OLED_WRITE_COMMAND      2
+#define OLED_DELAY              3
 
 /* some LEDs don't display anything in first two columns  */
 /* #define SSD1309_WIDTH           130			  */

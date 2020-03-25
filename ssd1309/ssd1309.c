@@ -92,6 +92,7 @@ void ssd1309_Init(ssd1309_i2c_handle i2c_comm_handle)
 #elif defined(SSD1309_USE_SPI)
 void ssd1309_Init(ssd1309_spi_handle spi_comm_handle) 
 {
+    uint8_t ssd1309_DelayTimeMS = 100;
     if (NULL != spi_comm_handle)
     {
         spi_comm_handle_callback = spi_comm_handle;
@@ -101,7 +102,7 @@ void ssd1309_Init(ssd1309_spi_handle spi_comm_handle)
     ssd1309_Reset();
 
     /* Wait for the screen to boot */
-    nrf_delay_ms(100);
+    spi_comm_handle_callback(OLED_DELAY, &ssd1309_DelayTimeMS, sizeof(uint8_t));
     
     /* Init OLED */
     ssd1309_WriteCommand(0xAE); /* Display off */
@@ -310,8 +311,8 @@ void ssd1309_WriteSymbol(SymbolID_t Symbol, uint8_t x, uint8_t y)
     /* Check remaining space on current line */
     if (0 == SSD1309.Rotated)
     {
-	if ((SSD1309_WIDTH <= (SSD1309.CurrentX + TW_Symbol[Symbol].SymbolWidth))  ||
-	    (SSD1309_HEIGHT <= (SSD1309.CurrentY + TW_Symbol[Symbol].SymbolHeight))
+	if ((SSD1309_WIDTH <= (SSD1309.CurrentX + SSD1309_Symbol[Symbol].SymbolWidth))  ||
+	    (SSD1309_HEIGHT <= (SSD1309.CurrentY + SSD1309_Symbol[Symbol].SymbolHeight))
 	   )
 	{
 	    /* Not enough space on current line */
@@ -320,8 +321,8 @@ void ssd1309_WriteSymbol(SymbolID_t Symbol, uint8_t x, uint8_t y)
     }
     else
     {
-	if ((SSD1309_WIDTH <= (SSD1309.CurrentX - TW_Symbol[Symbol].SymbolWidth))  ||
-	    (SSD1309_HEIGHT <= (SSD1309.CurrentY - TW_Symbol[Symbol].SymbolHeight))
+	if ((SSD1309_WIDTH <= (SSD1309.CurrentX - SSD1309_Symbol[Symbol].SymbolWidth))  ||
+	    (SSD1309_HEIGHT <= (SSD1309.CurrentY - SSD1309_Symbol[Symbol].SymbolHeight))
 	   )
 	{
 	    /* Not enough space on current line */
@@ -330,11 +331,11 @@ void ssd1309_WriteSymbol(SymbolID_t Symbol, uint8_t x, uint8_t y)
     }
 
     /* Use the data to write */
-    for (i = 0; i <= TW_Symbol[Symbol].SymbolHeight; i++) 
+    for (i = 0; i <= SSD1309_Symbol[Symbol].SymbolHeight; i++) 
     {
-	b = TW_Symbol[Symbol].data[i];
+	b = SSD1309_Symbol[Symbol].data[i];
 
-        for (j = 0; j < TW_Symbol[Symbol].SymbolWidth; j++) 
+        for (j = 0; j < SSD1309_Symbol[Symbol].SymbolWidth; j++) 
 	{
             if ((b << j) & 0x8000)  
 	    {
@@ -361,11 +362,8 @@ void ssd1309_WriteSymbol(SymbolID_t Symbol, uint8_t x, uint8_t y)
         }
     }
     
-    if ((DTS_0 != Symbol) && (DTS_1 != Symbol) && (DTS_2 != Symbol) && (DTS_3 != Symbol))
-    {
-	/* The current space is now taken */
-	SSD1309.CurrentX += TW_Symbol[Symbol].SymbolWidth;
-    }
+    /* The current space is now taken */
+    SSD1309.CurrentX += SSD1309_Symbol[Symbol].SymbolWidth;
 }
 
 
@@ -462,7 +460,6 @@ void ssd1309_SetCursor(uint8_t x, uint8_t y)
     else
     {
 	SSD1309.CurrentX = SSD1309_WIDTH - x;
-//	SSD1309.CurrentX = x;
 	SSD1309.CurrentY = SSD1309_HEIGHT - 1 - y;
     }
 }
