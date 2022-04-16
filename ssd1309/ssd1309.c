@@ -1,6 +1,8 @@
 #include "ssd1309.h"
 #include "Miscellaneous.h"
 
+static float ssd1309_DegToRad(float par_deg);
+static uint16_t ssd1309_NormalizeTo0_360(uint16_t par_deg);
 
 #if defined(SSD1309_USE_I2C)
 ssd1309_i2c_handle i2c_comm_handle_callback;
@@ -450,8 +452,10 @@ void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
     
     float rad;
     
-    normalize2_0_360(sweep, &loc_sweep);
-    normalize2_0_360(start_angle, &loc_angle_count);
+//    normalize2_0_360(sweep, &loc_sweep);
+      loc_sweep = ssd1309_NormalizeTo0_360(sweep);
+//    normalize2_0_360(start_angle, &loc_angle_count);
+      loc_angle_count = ssd1309_NormalizeTo0_360(start_angle);
     
     count = (loc_angle_count * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
     approx_segments = (loc_sweep * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
@@ -459,20 +463,22 @@ void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
 
     while (count < approx_segments)
     {
-        degree2radian(count * approx_degree, &rad);
+//        degree2radian(count * approx_degree, &rad);
         xp1 = x + (int8_t)(sin(rad) * radius);
         yp1 = y + (int8_t)(cos(rad) * radius);    
         count++;
-
+#if 1
         if (count != approx_segments)
         {
-            degree2radian(count * approx_degree, &rad);
+//            degree2radian(count * approx_degree, &rad);
+              rad = ssd1309_DegToRad(count * approx_degree);
         }
         else
         {            
-            degree2radian(loc_sweep, &rad);
+//            degree2radian(loc_sweep, &rad);
+            rad = ssd1309_DegToRad(loc_sweep);
         }
-
+#endif
         xp2 = x + (int8_t)(sin(rad) * radius);
         yp2 = y + (int8_t)(cos(rad) * radius);    
         ssd1309_DrawLine(xp1, yp1, xp2, yp2, color);
@@ -605,4 +611,22 @@ void ssd1309_SetContrast(const uint8_t value)
 
     ssd1309_WriteCommand(kSetContrastControlRegister);
     ssd1309_WriteCommand(value);
+}
+/*Convert Degrees to Radians*/
+static float ssd1309_DegToRad(float par_deg) {
+    return par_deg * 3.14 / 180.0;
+}
+/*Normalize degree to [0;360]*/
+static uint16_t ssd1309_NormalizeTo0_360(uint16_t par_deg) {
+  uint16_t loc_angle;
+  if(par_deg <= 360)
+  {
+    loc_angle = par_deg;
+  }
+  else
+  {
+    loc_angle = par_deg % 360;
+    loc_angle = ((par_deg != 0)?par_deg:360);
+  }
+  return loc_angle;
 }
