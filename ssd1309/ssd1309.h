@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "ssd1309_conf.h"
 #include "ssd1309_fonts.h"
 
 #include "nordic_common.h"
@@ -28,7 +29,9 @@
 #include "app_error.h"
 
 #if defined(SSD1309_USE_I2C)
+#ifndef SSD1309_I2C_ADDR
 #define SSD1309_I2C_ADDR        0x3C
+#endif
 
 #define MAX_TX_DATA             64
 #define MAX_ADDRESS_SIZE        2
@@ -54,6 +57,11 @@ typedef void (*ssd1309_spi_handle)(uint8_t, uint8_t *, size_t);
 /* SSD1309 offset of x in pixels  */
 #ifndef SSD1309_OFFSET_X
 #define SSD1309_OFFSET_X        -2
+#define SSD1309_X_OFFSET_LOWER (SSD1309_X_OFFSET & 0x0F)
+#define SSD1309_X_OFFSET_UPPER ((SSD1309_X_OFFSET >> 4) & 0x07)
+#else
+#define SSD1309_X_OFFSET_LOWER 0
+#define SSD1309_X_OFFSET_UPPER 0
 #endif
 
 /* SSD1309 offset of y in pixels  */
@@ -99,6 +107,7 @@ typedef struct
     uint16_t CurrentY;
     SSD1309_ROTATION Rotation;
     uint8_t Initialized;
+    uint8_t DisplayOn;
 } SSD1309_t;
 
 typedef struct
@@ -125,10 +134,21 @@ char ssd1309_WriteString(char* str, FontDef Font, SSD1309_COLOR color);
 void ssd1309_SetCursor(uint8_t x, uint8_t y);
 void ssd1309_DrawLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, SSD1309_COLOR color);
 void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle, uint16_t sweep, SSD1309_COLOR color);
+void ssd1309_DrawArcWithRadiusLine(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle, uint16_t sweep, SSD1309_COLOR color);
 void ssd1309_DrawCircle(uint8_t par_x, uint8_t par_y, uint8_t par_r, SSD1309_COLOR color);
+void ssd1309_FillCircle(uint8_t par_x,uint8_t par_y, uint8_t par_r, SSD1309_COLOR par_color);
 void ssd1309_Polyline(const SSD1309_VERTEX *par_vertex, uint16_t par_size, SSD1309_COLOR color);
 void ssd1309_DrawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, SSD1309_COLOR color);
+void ssd1309_FillRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, SSD1309_COLOR color);
 void ssd1309_DrawBitmap(uint8_t x, uint8_t y, const unsigned char* bitmap, uint8_t w, uint8_t h, SSD1309_COLOR color);
+
+/**
+ * @brief Sets the contrast of the display.
+ * @param[in] value contrast to set.
+ * @note Contrast increases as the value increases.
+ * @note RESET = 7Fh.
+ */
+void ssd1309_SetContrast(const uint8_t value);
 
 /* Low-level procedures	*/
 void ssd1309_Reset(void);

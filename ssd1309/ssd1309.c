@@ -1,5 +1,4 @@
 #include "ssd1309.h"
-#include "Miscellaneous.h"
 
 static float ssd1309_DegToRad(float par_deg);
 static uint16_t ssd1309_NormalizeTo0_360(uint16_t par_deg);
@@ -243,8 +242,8 @@ void ssd1309_UpdateScreen(void)
     for (uint8_t i = 0; i < (SSD1309_HEIGHT / 8); i++) 
     {
         ssd1309_WriteCommand(0xB0 + i);
-        ssd1309_WriteCommand(0x00);
-        ssd1309_WriteCommand(0x10);
+        ssd1309_WriteCommand(0x00 + SSD1309_X_OFFSET_LOWER);
+        ssd1309_WriteCommand(0x10 + SSD1309_X_OFFSET_UPPER);
         ssd1309_WriteData(&SSD1309_Buffer[SSD1309_WIDTH * i], SSD1309_WIDTH);
     }
 }
@@ -264,11 +263,11 @@ void ssd1309_DrawPixel(uint8_t x, uint8_t y, SSD1309_COLOR color)
     /* Draw in the right color */
     if (color == White) 
     {
-	SSD1309_Buffer[x + (y / 8) * SSD1309_WIDTH] |= 1 << (y % 8);
+	    SSD1309_Buffer[x + (y / 8) * SSD1309_WIDTH] |= 1 << (y % 8);
     } 
     else 
     { 
-	SSD1309_Buffer[x + (y / 8) * SSD1309_WIDTH] &= ~(1 << (y % 8));
+	    SSD1309_Buffer[x + (y / 8) * SSD1309_WIDTH] &= ~(1 << (y % 8));
     }
 }
 
@@ -452,9 +451,7 @@ void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
     
     float rad;
     
-//    normalize2_0_360(sweep, &loc_sweep);
       loc_sweep = ssd1309_NormalizeTo0_360(sweep);
-//    normalize2_0_360(start_angle, &loc_angle_count);
       loc_angle_count = ssd1309_NormalizeTo0_360(start_angle);
     
     count = (loc_angle_count * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
@@ -463,19 +460,16 @@ void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
 
     while (count < approx_segments)
     {
-//        degree2radian(count * approx_degree, &rad);
         xp1 = x + (int8_t)(sin(rad) * radius);
         yp1 = y + (int8_t)(cos(rad) * radius);    
         count++;
 #if 1
         if (count != approx_segments)
         {
-//            degree2radian(count * approx_degree, &rad);
               rad = ssd1309_DegToRad(count * approx_degree);
         }
         else
         {            
-//            degree2radian(loc_sweep, &rad);
             rad = ssd1309_DegToRad(loc_sweep);
         }
 #endif
@@ -483,6 +477,62 @@ void ssd1309_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
         yp2 = y + (int8_t)(cos(rad) * radius);    
         ssd1309_DrawLine(xp1, yp1, xp2, yp2, color);
     }
+}
+
+
+/*
+ * Draw arc with radius line
+ * Angle is beginning from 4 quart of trigonometric circle (3pi/2)
+ * start_angle: start angle in degree
+ * sweep: finish angle in degree
+ */
+void ssd1309_DrawArcWithRadiusLine(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle, uint16_t sweep, SSD1309_COLOR color)
+{
+    static const uint8_t CIRCLE_APPROXIMATION_SEGMENTS = 36;
+    float approx_degree;
+    uint32_t approx_segments;
+    uint8_t xp1 = 0;
+    uint8_t xp2 = 0;
+    uint8_t yp1 = 0;
+    uint8_t yp2 = 0;
+    uint32_t count = 0;
+    uint32_t loc_sweep = 0;
+    float rad;
+    
+    loc_sweep = ssd1309_NormalizeTo0_360(sweep);
+    
+    count = (ssd1309_NormalizeTo0_360(start_angle) * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
+    approx_segments = (loc_sweep * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
+    approx_degree = loc_sweep / (float)approx_segments;
+
+    rad = ssd1309_DegToRad(count * approx_degree);
+    uint8_t first_point_x = x + (int8_t)(sin(rad)*radius);
+    uint8_t first_point_y = y + (int8_t)(cos(rad)*radius);
+
+    while (count < approx_segments)
+    {
+        rad = ssd1309_DegToRad(count*approx_degree);
+        xp1 = x + (int8_t)(sin(rad)*radius);
+        yp1 = y + (int8_t)(cos(rad)*radius);    
+        count++;
+
+        if (count != approx_segments)
+        {
+            rad = ssd1309_DegToRad(count*approx_degree);
+        }
+        else
+        {            
+            rad = ssd1309_DegToRad(loc_sweep);
+        }
+
+        xp2 = x + (int8_t)(sin(rad)*radius);
+        yp2 = y + (int8_t)(cos(rad)*radius);    
+        ssd1309_DrawLine(xp1, yp1, xp2, yp2, color);
+    }
+    
+    // Radius line
+    ssd1309_DrawLine(x, y, first_point_x, first_point_y, color);
+    ssd1309_DrawLine(x, y, xp2, yp2, color);
 }
 
 
@@ -539,6 +589,56 @@ void ssd1309_DrawCircle(uint8_t par_x, uint8_t par_y, uint8_t par_r, SSD1309_COL
     return;
 }
 
+/* Draw filled circle. Pixel positions calculated using Bresenham's algorithm */
+void ssd1309_FillCircle(uint8_t par_x,uint8_t par_y,uint8_t par_r, SSD1309_COLOR par_color)
+{
+    int32_t x = -par_r;
+    int32_t y = 0;
+    int32_t err = 2 - 2 * par_r;
+    int32_t e2;
+
+    if (par_x >= SSD1306_WIDTH || par_y >= SSD1306_HEIGHT) {
+        return;
+    }
+
+    do {
+        for (uint8_t _y = (par_y + y); _y >= (par_y - y); _y--)
+        {
+            for (uint8_t _x = (par_x - x); _x >= (par_x + x); _x--)
+            {
+                ssd1309_DrawPixel(_x, _y, par_color);
+            }
+        }
+
+        e2 = err;
+        if (e2 <= y)
+        {
+            y++;
+            err = err + (y * 2 + 1);
+            if (-x == y && e2 <= x) {
+                e2 = 0;
+            }
+            else {
+                /* nothing to do */
+            }
+        }
+        else
+        {
+            /* nothing to do */
+        }
+
+        if (e2 > x)
+        {
+            x++;
+            err = err + (x * 2 + 1);
+        }
+        else
+        {
+            /* nothing to do */
+        }
+    } while (x <= 0);
+}
+
 
 /* Draw polyline */
 void ssd1309_Polyline(const SSD1309_VERTEX *par_vertex, uint16_t par_size, SSD1309_COLOR color)
@@ -567,6 +667,19 @@ void ssd1309_DrawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, SSD13
     ssd1309_DrawLine(x2, y1, x2, y2, color);
     ssd1309_DrawLine(x2, y2, x1, y2, color);
     ssd1309_DrawLine(x1, y2, x1, y1, color);
+}
+
+
+/* Draw filled rectangle */
+void ssd1309_FillRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, SSD1309_COLOR color)
+{
+    for (uint8_t y = y2; y >= y1; y--)
+    {
+        for (uint8_t x = x2; x >= x1; x--)
+        {
+            ssd1309_DrawPixel(x, y, color);
+        }
+    }
 }
 
 
@@ -612,11 +725,14 @@ void ssd1309_SetContrast(const uint8_t value)
     ssd1309_WriteCommand(kSetContrastControlRegister);
     ssd1309_WriteCommand(value);
 }
-/*Convert Degrees to Radians*/
+
+
+/* Convert Degrees to Radians */
 static float ssd1309_DegToRad(float par_deg) {
     return par_deg * 3.14 / 180.0;
 }
-/*Normalize degree to [0;360]*/
+
+/* Normalize degree to [0; 360] */
 static uint16_t ssd1309_NormalizeTo0_360(uint16_t par_deg) {
   uint16_t loc_angle;
   if(par_deg <= 360)
